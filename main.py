@@ -39,6 +39,9 @@ print("Preparing non numerical data...")
 csvfile = open('data/train.csv', newline='')
 datareader = csv.DictReader(csvfile)
 
+original_data = []
+original_data_key = 0
+
 for row in datareader:
     keywords_in_tweet = []
     state_in_tweet = 0
@@ -72,9 +75,13 @@ for row in datareader:
     y_type = y_type_classes.index(max(y_type_classes)) + 1
 
     # now generate the numeric arrays x and y
-    x_row = keywords_in_tweet + [state_in_tweet, location_in_tweet, y_sentiment, y_when, y_type]
+    x_row = [original_data_key] + keywords_in_tweet + [state_in_tweet, location_in_tweet, y_sentiment, y_when, y_type]
     X.append(x_row)
 
+    # Store the original example in a dictionary for future exploration
+    row['classes'] = ("s{}".format(y_sentiment), "w{}".format(y_when), "k{}".format(y_type))
+    original_data.append(row)
+    original_data_key = original_data_key + 1
 
 print("Converting data to numpy matrix")
 X = np.matrix(X)
@@ -111,35 +118,35 @@ X_train, Y_sentiment_train, Y_when_train, Y_type_train = separate_X_and_Y(X_trai
 X_validation, Y_sentiment_validation, Y_when_validation, Y_type_validation = separate_X_and_Y(X_validation)
 
 
-print("Training set size")
-print(X_train.shape)
-print("Validation set size")
-print(X_validation.shape)
-print("Test set size")
-print(X_test.shape)
-
 print("Training...")    
 lr_type = LogisticRegression()
-lr_type.fit(X_train, np.ravel(Y_type_train))
+# Drop first column (example id) as it is useless for predicting
+lr_type.fit(X_train[:, 1:], np.ravel(Y_type_train))
 
 
 print("Validating...")   
 
-def compute_error(X, Y):
+def compute_error(X, Y, model):
     error = 0;
     m = X.shape[0]
     for i in range(0, m - 1):
-        prediction = lr_type.predict(X[i, :]).item(0)
+        # Drop first column (example id) as it is useless for predicting
+        prediction = model.predict(X[i, 1:]).item(0)
         y_valid = Y[i]
         if prediction != y_valid:
             error = error + 1
+            example_id = X.item(i,0)
+            print(X.item(i,0))
+            print(original_data[i])
+            print("Valid class: k{}".format(y_valid))
+            print("Predicted class: k{}".format(prediction))
     print('Total examples:', m)
     print('Total errors:', error)
     print('Cuadratic mean error:', (error / m))
 
 
 print('- TRAINING SET ERROR')
-compute_error(X_train, Y_type_train)
+compute_error(X_train, Y_type_train, lr_type)
 
 print('- VALIDATION SET ERROR')
-compute_error(X_validation, Y_type_validation)
+compute_error(X_validation, Y_type_validation, lr_type)
