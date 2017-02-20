@@ -7,7 +7,7 @@ from sklearn.linear_model import LogisticRegression
 
 # Most simple params implementation, whether or not a certain work appers in the tweet
 keywords = [
-    "clouds",
+    "cloud",
     "cold",
     "dry",
     "hot",
@@ -18,7 +18,7 @@ keywords = [
     "other",
     "rain",
     "snow",
-    "storms",
+    "storm",
     "sun",
     "tornado",
     "wind",
@@ -57,7 +57,7 @@ for row in datareader:
     # check whether state is inside tweet
     if row['state'] in row['tweet']:
         state_in_tweet = 1
-    
+
     # check whether location is inside tweet
     if row['location'] in row['tweet']:
         location_in_tweet = 1
@@ -80,14 +80,15 @@ for row in datareader:
 
     # Store the original example in a dictionary for future exploration
     row['classes'] = ("s{}".format(y_sentiment), "w{}".format(y_when), "k{}".format(y_type))
+    row['data_key'] = original_data_key
     original_data.append(row)
     original_data_key = original_data_key + 1
 
+
 print("Converting data to numpy matrix")
 X = np.matrix(X)
-#Y_sentiment = np.array(Y_sentiment)
-#Y_when = np.array(Y_when)
-#Y_type = np.array(Y_type)
+# Limit to 1000 until the model is more tuned
+X = X[0:1000, :]
 
 
 print("Shuffling data...")
@@ -118,15 +119,15 @@ X_train, Y_sentiment_train, Y_when_train, Y_type_train = separate_X_and_Y(X_trai
 X_validation, Y_sentiment_validation, Y_when_validation, Y_type_validation = separate_X_and_Y(X_validation)
 
 
-print("Training...")    
+print("Training...")
 lr_type = LogisticRegression()
 # Drop first column (example id) as it is useless for predicting
 lr_type.fit(X_train[:, 1:], np.ravel(Y_type_train))
 
 
-print("Validating...")   
+print("Validating...")
 
-def compute_error(X, Y, model):
+def compute_error(X, Y, model, show_errors=False):
     error = 0;
     m = X.shape[0]
     for i in range(0, m - 1):
@@ -135,18 +136,21 @@ def compute_error(X, Y, model):
         y_valid = Y[i]
         if prediction != y_valid:
             error = error + 1
-            example_id = X.item(i,0)
-            print(X.item(i,0))
-            print(original_data[i])
-            print("Valid class: k{}".format(y_valid))
-            print("Predicted class: k{}".format(prediction))
+            example_id = X[i, 0]
+            if show_errors:
+                print(' ')
+                print(original_data[example_id])
+                print("Valid class: k{}".format(y_valid))
+                print("Predicted class: k{}".format(prediction))
+    print(' ')
     print('Total examples:', m)
     print('Total errors:', error)
     print('Cuadratic mean error:', (error / m))
 
 
 print('- TRAINING SET ERROR')
-compute_error(X_train, Y_type_train, lr_type)
+compute_error(X_train, Y_type_train, lr_type, show_errors=True)
 
+print('')
 print('- VALIDATION SET ERROR')
 compute_error(X_validation, Y_type_validation, lr_type)
