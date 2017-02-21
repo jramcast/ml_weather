@@ -4,34 +4,17 @@ from sklearn.datasets import make_blobs
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import learning_curve
 from sklearn.model_selection import ShuffleSplit
+from sklearn.preprocessing import PolynomialFeatures
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
-
+from nltk.stem import PorterStemmer
 
 
 # Most simple params implementation, whether or not a certain work appers in the tweet
-keywords = [
-    "cloud",
-    "cold",
-    "dry",
-    "hot",
-    "humid",
-    "hurricane",
-    "tell",
-    "ice",
-    "other",
-    "rain",
-    "snow",
-    "storm",
-    "sun",
-    "tornado",
-    "wind",
-    "now",
-    "tomorrow",
-    "yesterday",
-    "current"
-]
+from settings import keywords
+stemmer = PorterStemmer()
+stemmed_keywords = [ stemmer.stem(keyword) for keyword in keywords]
 
 
 X = []
@@ -53,8 +36,9 @@ for row in datareader:
     location_in_tweet = 0
 
     # check whether each keyword is inside tweet
-    for word in keywords:
-        if word in row['tweet']:
+    lowercase_tweet = row['tweet'].lower()
+    for keyword in keywords:
+        if keyword in lowercase_tweet:
             keywords_in_tweet.append(1)
         else:
             keywords_in_tweet.append(0)
@@ -93,7 +77,7 @@ for row in datareader:
 print("Converting data to numpy matrix")
 X = np.matrix(X)
 # Limit examples until the model is more tuned
-X = X[0:1000, :]
+X = X[0:2000, :]
 
 print("Shuffling data...")
 np.random.shuffle(X)
@@ -237,11 +221,14 @@ def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
     return plt
 
 
-# Cross validation with 5 iterations to get smoother mean test and train
+# Cross validation with 3 iterations to get smoother mean test and train
 # score curves, each time with 20% data randomly selected as a validation set.
-cv = ShuffleSplit(n_splits=5, test_size=0.2, random_state=0)
+cv = ShuffleSplit(n_splits=3, test_size=0.2, random_state=0)
 
 n = X.shape[1]
+X_curve = X[:, 0:n-3]
+y_curve = np.ravel(X[:, n-1])
+
 estimator = LogisticRegression()
-plot_learning_curve(estimator, 'Learning curve', X[:, 0:n-3], np.ravel(X[:, n-1]), ylim=(0.3, 1.01), cv=cv, n_jobs=1)
+plot_learning_curve(estimator, 'Learning curve', X_curve, y_curve, ylim=(0.3, 1.01), cv=cv, n_jobs=1)
 plt.show()
