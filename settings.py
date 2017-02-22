@@ -60,5 +60,6 @@ keywords = [
     "froze",
     "electric",
     "vulnerable",
-    "grill"
+    "grill",
+    "light"
 ]

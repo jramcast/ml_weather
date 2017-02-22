@@ -5,10 +5,16 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import learning_curve
 from sklearn.model_selection import ShuffleSplit
 from sklearn.preprocessing import PolynomialFeatures
+
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from nltk.stem import PorterStemmer
+from nltk.tokenize import TweetTokenizer
+
+# The tokeninzer converts to lowercase and
+# reduces lenght. For example: waaaayyyy to way
+tokenizer = TweetTokenizer(preserve_case=False, reduce_len=True)
 
 
 # Most simple params implementation, whether or not a certain work appers in the tweet
@@ -36,9 +42,17 @@ for row in datareader:
     location_in_tweet = 0
 
     # check whether each keyword is inside tweet
-    lowercase_tweet = row['tweet'].lower()
+    tweet = row['tweet'].lower()
+    tweet_tokens = [ stemmer.stem(word) for word in tokenizer.tokenize(tweet)]
+
+    for keyword in stemmed_keywords:
+        if keyword in tweet_tokens:
+            keywords_in_tweet.append(1)
+        else:
+            keywords_in_tweet.append(0)
+
     for keyword in keywords:
-        if keyword in lowercase_tweet:
+        if keyword in tweet:
             keywords_in_tweet.append(1)
         else:
             keywords_in_tweet.append(0)
@@ -69,6 +83,7 @@ for row in datareader:
 
     # Store the original example in a dictionary for future exploration
     row['classes'] = ("s{}".format(y_sentiment), "w{}".format(y_when), "k{}".format(y_type))
+    row['stemmed'] = tweet_tokens
     row['data_key'] = original_data_key
     original_data.append(row)
     original_data_key = original_data_key + 1
