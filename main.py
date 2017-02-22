@@ -1,5 +1,6 @@
 import csv
 import numpy as np
+from random import shuffle
 from sklearn.datasets import make_blobs
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import learning_curve
@@ -10,6 +11,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from nltk.stem import PorterStemmer
+from nltk.stem.snowball import EnglishStemmer
 from nltk.tokenize import TweetTokenizer
 
 # The tokeninzer converts to lowercase and
@@ -17,27 +19,37 @@ from nltk.tokenize import TweetTokenizer
 # More info here: http://textminingonline.com/dive-into-nltk-part-ii-sentence-tokenize-and-word-tokenize
 tokenizer = TweetTokenizer(preserve_case=False, reduce_len=True)
 
-
 # Most simple params implementation, whether or not a certain work appers in the tweet
 from settings import keywords
-stemmer = PorterStemmer()
+stemmer = EnglishStemmer()
 stemmed_keywords = [ stemmer.stem(keyword) for keyword in keywords]
 
-
+# Prepare future numpy matrices
 X = []
 Y_sentiment = []
 Y_when = []
 Y_type = []
-
-
-print("Preparing non numerical data...")
-csvfile = open('data/train.csv', newline='')
-datareader = csv.DictReader(csvfile)
-
+#lambda regularization param
+lambda_reg = 0.01
+# solver for minification optimization
+solver = 'liblinear'
+# Structures to hold original data
 original_data = []
 original_data_key = 0
 
-for row in datareader:
+
+print("Reading CSV...")
+csvfile = open('data/train.csv', newline='')
+datareader = csv.DictReader(csvfile)
+data = list(datareader)
+
+print("Shuffling data and selecting small subset...")
+shuffle(data)
+data = data[0: 50000]
+
+
+print("Generating data features...")
+for row in data:
     keywords_in_tweet = []
     state_in_tweet = 0
     location_in_tweet = 0
@@ -92,19 +104,15 @@ for row in datareader:
 
 print("Converting data to numpy matrix")
 X = np.matrix(X)
-# Limit examples until the model is more tuned
-X = X[0:2000, :]
-
-print("Shuffling data...")
-np.random.shuffle(X)
 
 
 print("Splitting data set in training, validation and test sets")
 m = X.shape[0]
-validationset_start = round(m * 0.6)
+# TODO: change test validation set start to 60% when we start using x_test
+validationset_start = round(m * 0.8)
 testset_start = round(m * 0.8)
 X_train = X[0:validationset_start, :]
-X_validation = X[validationset_start:testset_start, :]
+X_validation = X[validationset_start: , :]
 X_test = X[testset_start:, :]
 
 
@@ -124,7 +132,7 @@ X_validation, Y_sentiment_validation, Y_when_validation, Y_type_validation = sep
 
 
 print("Training...")
-lr_type = LogisticRegression()
+lr_type = LogisticRegression(C=1/lambda_reg, solver=solver)
 # Drop first column (example id) as it is useless for predicting
 lr_type.fit(X_train[:, 1:], np.ravel(Y_type_train))
 
@@ -153,11 +161,14 @@ def compute_error(X, Y, model, show_errors=False):
 
 
 print('- TRAINING SET ERROR')
-compute_error(X_train, Y_type_train, lr_type, show_errors=True)
+compute_error(X_train, Y_type_train, lr_type)
 
 print('')
 print('- VALIDATION SET ERROR')
-compute_error(X_validation, Y_type_validation, lr_type)
+compute_error(X_validation, Y_type_validation, lr_type, show_errors=True)
+
+print ('* stemmed keywords *')
+print(stemmed_keywords)
 
 
 """
@@ -214,9 +225,13 @@ def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
     if ylim is not None:
         plt.ylim(*ylim)
     plt.xlabel("Training examples")
-    plt.ylabel("Score")
+    plt.ylabel("Error")
     train_sizes, train_scores, test_scores = learning_curve(
         estimator, X, y, cv=cv, n_jobs=n_jobs, train_sizes=train_sizes)
+
+    train_scores = 1 - train_scores
+    test_scores = 1 - test_scores
+
     train_scores_mean = np.mean(train_scores, axis=1)
     train_scores_std = np.std(train_scores, axis=1)
     test_scores_mean = np.mean(test_scores, axis=1)
@@ -229,9 +244,9 @@ def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
     plt.fill_between(train_sizes, test_scores_mean - test_scores_std,
                      test_scores_mean + test_scores_std, alpha=0.1, color="g")
     plt.plot(train_sizes, train_scores_mean, 'o-', color="r",
-             label="Training score")
+             label="Training error")
     plt.plot(train_sizes, test_scores_mean, 'o-', color="g",
-             label="Cross-validation score")
+             label="Cross-validation error")
 
     plt.legend(loc="best")
     return plt
@@ -245,6 +260,6 @@ n = X.shape[1]
 X_curve = X[:, 0:n-3]
 y_curve = np.ravel(X[:, n-1])
 
-estimator = LogisticRegression()
-plot_learning_curve(estimator, 'Learning curve', X_curve, y_curve, ylim=(0.3, 1.01), cv=cv, n_jobs=1)
+estimator = LogisticRegression(C=1/lambda_reg, solver=solver)
+plot_learning_curve(estimator, 'Learning curve', X_curve, y_curve, ylim=(0, 0.5), cv=cv, n_jobs=1)
 plt.show()
