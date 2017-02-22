@@ -14,6 +14,7 @@ from nltk.tokenize import TweetTokenizer
 
 # The tokeninzer converts to lowercase and
 # reduces lenght. For example: waaaayyyy to way
+# More info here: http://textminingonline.com/dive-into-nltk-part-ii-sentence-tokenize-and-word-tokenize
 tokenizer = TweetTokenizer(preserve_case=False, reduce_len=True)
 
 
