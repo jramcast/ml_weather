@@ -1,3 +1,7 @@
+"""
+Quick and dirty test
+to classify tweets talking about weather
+"""
 import csv
 import numpy as np
 from random import shuffle
@@ -21,6 +25,7 @@ tokenizer = TweetTokenizer(preserve_case=False, reduce_len=True)
 
 # Most simple params implementation, whether or not a certain work appers in the tweet
 from settings import keywords
+from frequent import get_most_frequent_terms
 stemmer = EnglishStemmer()
 stemmed_keywords = [ stemmer.stem(keyword) for keyword in keywords]
 
@@ -30,7 +35,7 @@ Y_sentiment = []
 Y_when = []
 Y_type = []
 #lambda regularization param
-lambda_reg = 0.01
+lambda_reg = 1
 # solver for minification optimization
 solver = 'liblinear'
 # Structures to hold original data
@@ -43,10 +48,21 @@ csvfile = open('data/train.csv', newline='')
 datareader = csv.DictReader(csvfile)
 data = list(datareader)
 
+
 print("Shuffling data and selecting small subset...")
 shuffle(data)
-data = data[0: 50000]
+data = data[0: 10000]
 
+
+print("Getting most common words as features.")
+most_frequent_terms = list()
+def filter_tweets():
+    only_training_tweets = data[0: int(len(data)*0.8)]
+    for row in only_training_tweets:
+        yield row['tweet']
+most_frequent_terms = get_most_frequent_terms(filter_tweets(), 5000)
+automatic_features = [text for text, times in most_frequent_terms]
+stemmed_automatic_features = [stemmer.stem(token) for token in automatic_features]
 
 print("Generating data features...")
 for row in data:
@@ -58,17 +74,17 @@ for row in data:
     tweet = row['tweet'].lower()
     tweet_tokens = [ stemmer.stem(word) for word in tokenizer.tokenize(tweet)]
 
-    for keyword in stemmed_keywords:
-        if keyword in tweet_tokens:
-            keywords_in_tweet.append(1)
-        else:
-            keywords_in_tweet.append(0)
-
-    for keyword in keywords:
+    for keyword in automatic_features:
         if keyword in tweet:
             keywords_in_tweet.append(1)
         else:
             keywords_in_tweet.append(0)
+
+    """for keyword in stemmed_automatic_features:
+        if keyword in tweet_tokens:
+            keywords_in_tweet.append(1)
+        else:
+            keywords_in_tweet.append(0)"""
 
     # check whether state is inside tweet
     if row['state'] in row['tweet']:
@@ -165,7 +181,7 @@ compute_error(X_train, Y_type_train, lr_type)
 
 print('')
 print('- VALIDATION SET ERROR')
-compute_error(X_validation, Y_type_validation, lr_type, show_errors=True)
+compute_error(X_validation, Y_type_validation, lr_type, show_errors=False)
 
 print ('* stemmed keywords *')
 print(stemmed_keywords)
@@ -254,7 +270,7 @@ def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
 
 # Cross validation with 3 iterations to get smoother mean test and train
 # score curves, each time with 20% data randomly selected as a validation set.
-cv = ShuffleSplit(n_splits=3, test_size=0.2, random_state=0)
+cv = ShuffleSplit(n_splits=1, test_size=0.2, random_state=0)
 
 n = X.shape[1]
 X_curve = X[:, 0:n-3]
