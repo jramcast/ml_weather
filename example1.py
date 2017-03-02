@@ -7,8 +7,8 @@ Quick and dirty test to classify tweets talking about weather.
 """
 
 import csv
-import numpy as np
 from random import shuffle
+import numpy as np
 from sklearn.linear_model import LogisticRegression
 from frequent import get_most_frequent_terms
 
@@ -99,7 +99,6 @@ X = np.matrix(X)
 
 print("Splitting data set in training, validation and test sets")
 m = X.shape[0]
-# TODO: change test validation set start to 60% when we start using x_test
 validationset_start = round(m * 0.6)
 testset_start = round(m * 0.8)
 X_train = X[0:validationset_start, :]

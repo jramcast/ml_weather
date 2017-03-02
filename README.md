@@ -12,7 +12,7 @@ https://www.kaggle.com/c/crowdflower-weather-twitter
 
 ```
 pip install -r requirements.txt
-```'''
+```
 
 # Run
 
