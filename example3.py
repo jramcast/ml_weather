@@ -8,7 +8,9 @@ import math
 from random import shuffle
 import numpy as np
 from sklearn.neural_network import MLPClassifier
+from sklearn.model_selection import cross_val_score
 from frequent import get_most_frequent_terms
+
 
 
 print("Reading CSV...")
@@ -19,16 +21,16 @@ data = list(datareader)
 
 print("Shuffling data...")
 shuffle(data)
-#data = data[0: 20000]
+data = data[0: 2000]
 
 
-HOW_MANY_FEATURES = 5000
+HOW_MANY_FEATURES = 1000
 print("Selecting features based on the most {} common words.".format(HOW_MANY_FEATURES))
 most_frequent_terms = list()
 
 def filter_tweets():
     # we do not want to use words from the validation set
-    only_training_tweets = data[0: int(len(data)*0.6)]
+    only_training_tweets = data[0: int(len(data)*0.8)]
     for row in only_training_tweets:
         yield row['tweet']
 
@@ -77,47 +79,13 @@ print("Converting data to numpy matrix")
 X = np.matrix(X)
 y = np.matrix(y)
 
-sigmoider = lambda val: 1 if float(val) >= 0.3 else 0
+sigmoider = lambda val: 1 if float(val) >= 0.35 else 0
 vsigmoid = np.vectorize(sigmoider)
-
-
-print("Splitting data set in training, validation and test sets")
-m = X.shape[0]
-validationset_start = round(m * 0.6)
-testset_start = round(m * 0.8)
-X_train = X[0:validationset_start, :]
-y_train = y[0:validationset_start]
-X_validation = X[validationset_start:testset_start , :]
-y_validation = y[validationset_start:testset_start]
-X_test = X[testset_start:, :]
-
 
 print("Training...")
 classifier = MLPClassifier()
-classifier.fit(X_train, vsigmoid(y_train))
-
-
-def compute_error(X, Y, model, show_errors=False):
-    """
-    Computes the predicion error of a given model
-    """
-    error = 0
-    m = X.shape[0]
-
-    for i in range(0, m - 1):
-        y_valid = Y[i]
-        prediction = model.predict(X[i, :])
-        if np.any(np.not_equal(np.round(y_valid), prediction)):
-            error = error + 1
-
-    print('-- Total examples:', m)
-    print('-- Total errors:', error)
-    print('-- Cuadratic mean error:', (error / m))
+score = cross_val_score(classifier, X, vsigmoid(y), scoring='f1_samples')
+print(np.mean(score))
 
 
 
-print("Validating regularizacion term lambda...")
-print('- Training set:')
-compute_error(X_train, y_train, classifier)
-print('- Validation set:')
-compute_error(X_validation, y_validation, classifier)
