@@ -4,6 +4,7 @@ Test 3
 Introduces the use of MLPClassifier.
 """
 import csv
+import math
 from random import shuffle
 import numpy as np
 from sklearn.neural_network import MLPClassifier
@@ -18,14 +19,15 @@ data = list(datareader)
 
 print("Shuffling data...")
 shuffle(data)
-data = data[0: 10000]
+#data = data[0: 20000]
 
 
-HOW_MANY_FEATURES = 1000
+HOW_MANY_FEATURES = 5000
 print("Selecting features based on the most {} common words.".format(HOW_MANY_FEATURES))
 most_frequent_terms = list()
 
 def filter_tweets():
+    # we do not want to use words from the validation set
     only_training_tweets = data[0: int(len(data)*0.6)]
     for row in only_training_tweets:
         yield row['tweet']
@@ -101,15 +103,15 @@ def compute_error(X, Y, model, show_errors=False):
     """
     error = 0
     m = X.shape[0]
+
     for i in range(0, m - 1):
         y_valid = Y[i]
         prediction = model.predict(X[i, :])
-        #print('*******************')
-        #print(y_valid)
-        #print(prediction.astype(float))
-        error = error + np.sum(np.square(prediction - y_valid))
+        if np.any(np.not_equal(np.round(y_valid), prediction)):
+            error = error + 1
 
     print('-- Total examples:', m)
+    print('-- Total errors:', error)
     print('-- Cuadratic mean error:', (error / m))
 
 
