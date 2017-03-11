@@ -86,6 +86,3 @@ print("Training...")
 classifier = MLPClassifier()
 score = cross_val_score(classifier, X, vsigmoid(y), scoring='f1_samples')
 print(np.mean(score))
-
-
-
