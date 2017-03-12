@@ -20,7 +20,7 @@ from nltk.tokenize import TweetTokenizer
 # Prepare stopwords
 punctuation = list(string.punctuation)
 stopwords_list = stopwords.words('english') + punctuation \
-                    + ['rt', 'via', '…', '...', '️', 'ヽ', '、', '｀' ]
+                    + ['rt', 'via', '…', '...', '️', 'ヽ', '、', '｀', '_' ]
 
 
 print("Reading CSV...")
@@ -29,12 +29,12 @@ datareader = csv.DictReader(csvfile)
 data = list(datareader)
 
 
-print("Shuffling data...")
-shuffle(data)
-data = data[0: 10000]
+#print("Shuffling data...")
+#shuffle(data)
+#data = data[0: 1000]
 
 
-HOW_MANY_FEATURES = 1000
+HOW_MANY_FEATURES = 5000
 print("Selecting features based on the most {} common words.".format(HOW_MANY_FEATURES))
 tokenizer = TweetTokenizer(preserve_case=True)
 vectorizer = TfidfVectorizer(
