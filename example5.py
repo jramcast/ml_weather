@@ -8,7 +8,8 @@ import math
 from random import shuffle
 import numpy as np
 import string
-from sklearn.neural_network import MLPClassifier
+from sklearn.svm import SVC
+from sklearn.multiclass import OneVsRestClassifier
 from sklearn.model_selection import cross_val_score
 from frequent import get_most_frequent_terms
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
@@ -70,7 +71,7 @@ sigmoider = lambda val: 1 if float(val) >= 0.3 else 0
 vsigmoid = np.vectorize(sigmoider)
 
 print("Training...")
-classifier = MLPClassifier(hidden_layer_sizes=(2000, 1000, 500))
+classifier = OneVsRestClassifier(SVC(kernel='linear'))
 precision = cross_val_score(classifier, X, vsigmoid(y), scoring='precision_weighted')
 recall = cross_val_score(classifier, X, vsigmoid(y), scoring='recall_weighted')
 
