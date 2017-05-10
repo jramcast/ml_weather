@@ -18,6 +18,8 @@ from frequent import get_most_frequent_terms
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from nltk.corpus import stopwords
 from nltk.tokenize import TweetTokenizer
+from sklearn.model_selection import validation_curve
+from sklearn.model_selection import GridSearchCV
 
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
@@ -35,12 +37,11 @@ datareader = csv.DictReader(csvfile)
 data = list(datareader)
 
 
-
-HOW_MANY_FEATURES = 1000
+HOW_MANY_FEATURES = 10000
 print("Selecting features based on the most {} common words.".format(HOW_MANY_FEATURES))
 tokenizer = TweetTokenizer(preserve_case=True)
 vectorizer = TfidfVectorizer(
-    min_df=1, 
+    min_df=1,
     max_features=HOW_MANY_FEATURES,
     ngram_range=(1, 3),
     stop_words=stopwords_list,
@@ -115,7 +116,7 @@ accuracy = cross_val_score(classifier, X, vsigmoid(y), scoring='accuracy')
 precision = cross_val_score(classifier, X, vsigmoid(y), scoring='precision_weighted')
 recall = cross_val_score(classifier, X, vsigmoid(y), scoring='recall_weighted')
 
-print('Accuracy')
+print('=== Accuracy ===')
 print(accuracy)
 meanprecision = np.mean(precision)
 meanrecall = np.mean(recall)
@@ -127,4 +128,3 @@ print('F1')
 print(2 * (meanprecision * meanrecall) / (meanprecision + meanrecall) )
 print ('Time elapsed:')
 print(time.time() - start_time)
-

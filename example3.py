@@ -21,6 +21,7 @@ data = list(datareader)
 
 print("Shuffling data...")
 shuffle(data)
+print("Selecting data subset")
 data = data[0: 2000]
 
 
