@@ -7,6 +7,8 @@ import csv
 import time
 import string
 import re
+import math
+import numpy as np
 from sklearn.svm import LinearSVC
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.model_selection import cross_val_score
@@ -16,10 +18,10 @@ from nltk.corpus import stopwords
 from nltk.tokenize import TweetTokenizer
 from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.preprocessing import FunctionTransformer, MinMaxScaler, Imputer, label_binarize
+from sklearn.preprocessing import MinMaxScaler, Imputer, label_binarize
 from sklearn.feature_extraction import DictVectorizer
-
 from textblob import TextBlob
+from sklearn.externals import joblib
 
 print("Reading CSV...")
 csvfile = open('data/train.csv', newline='')
@@ -106,50 +108,76 @@ def tokenize(text):
     return stems"""
 
 
-vectorizer = CountVectorizer(
-    min_df=10,
-    max_df=0.5,
-    ngram_range=(1, 3),
-    max_features=10000,
-    lowercase=True,
-    stop_words=stopwords_list,
-    tokenizer=tokenize
-)
-
-pipeline = Pipeline([
-    ('union', FeatureUnion([
-        ('vect', vectorizer),
-        ('nums', NumericFieldsExtractor()),
-    ])),
-    ('cls', OneVsRestClassifier(LinearSVC(C=0.3, max_iter=300, loss='hinge'))),
-])
-
 def filter_tweets(data):
     return [ row['tweet'] for row in data ]
 
-def filter_classes(data):
+
+
+classes = [
+    'k1',
+    'k2',
+    'k3',
+    'k4',
+    'k5',
+    'k6',
+    'k7',
+    'k8',
+    'k9',
+    'k10',
+    'k11',
+    'k12',
+    'k13',
+    'k14',
+    'k15',
+    #'s1',
+    's2',
+    's3',
+    's4',
+    's5',
+    'w1',
+    'w2',
+    #'w3',
+    'w4',
+]
+def filter_class(data, className):
     y = []
     for row in data:
-        # for now, we only use the weather type class
-        y_type_classes = [row['k1'], row['k2'], row['k3'], row['k4'], row['k5'], row['k6'], row['k7'], row['k8'],
-            row['k9'], row['k10'], row['k11'], row['k12'], row['k13'], row['k14'], row['k15']]
-        y_row = [ float(val) for val in y_type_classes ]
-        y_row = y_row.index(max(y_row)) + 1
-        y.append(y_row)
-    classes = [
-         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
-    ]
-    return label_binarize(y, classes)
+        value = float(row[className])
+        y.append(math.ceil(value))
+
+    return y
 
 x_train = filter_tweets(data)
-y_train = filter_classes(data)
 
+for className in classes:
+    y_train = filter_class(data, className)
+    print("--------------------------> Training " + className)
+    start_time = time.time()
 
-print("Training...")
-start_time = time.time()
-accuracy = cross_val_score(pipeline, x_train, y_train, scoring='accuracy')
+    vectorizer = CountVectorizer(
+        min_df=10,
+        max_df=0.5,
+        ngram_range=(1, 3),
+        max_features=10000,
+        lowercase=True,
+        stop_words=stopwords_list,
+        tokenizer=tokenize
+    )
+    num_extractor = NumericFieldsExtractor()
+    svm = LinearSVC(C=0.3, max_iter=300, loss='hinge')
+    pipeline = Pipeline([
+        ('union', FeatureUnion([
+            ('vect', vectorizer),
+            ('nums', num_extractor),
+        ])),
+        ('cls', svm),
+    ])
 
-print('=== Accuracy ===')
-print(accuracy)
-print ('Time elapsed:')
-print(time.time() - start_time)
+    y_train = filter_class(data, className)
+    accuracy = cross_val_score(pipeline, x_train, y_train, scoring='accuracy')
+    print('=== Accuracy ===')
+    print(np.mean(accuracy))
+    print('Time elapsed:')
+    print(time.time() - start_time)
+    # save model
+    joblib.dump(pipeline, 'models/{}.pkl'.format(className))
